@@ -1,0 +1,19 @@
+name: MWS
+version: '1.0'
+main: org.loreware.mWS.MWS
+api-version: '1.21'
+prefix: LoreWare
+load: STARTUP
+authors: [ robroblore ]
+description: Idek
+
+commands:
+#  bankware:
+#    description: Bank commands like reload, give, take, balance, reload
+#    permission: bankware.givetake
+
+
+permissions:
+  bankware.canReload:
+    description: Can reload the config
+    default: op
