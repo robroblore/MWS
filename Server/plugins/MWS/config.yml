@@ -1,0 +1,13 @@
+#   __  ____          _______
+# |  \/  \ \        / / ____|
+# | \  / |\ \  /\  / / (___
+# | |\/| | \ \/  \/ / \___ \
+# | |  | |  \  /\  /  ____) |
+# |_|  |_|   \/  \/  |_____/
+#
+# Default configuration file made by LoreWare (robroblore)
+# Note: If you ever want to display the '&' symbol in a message, use '&&' instead.
+# Permissions:
+
+messages:
+  prefix: "&l&dMWS ▶ &r"

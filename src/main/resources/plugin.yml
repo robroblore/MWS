@@ -8,12 +8,12 @@ authors: [ robroblore ]
 description: Idek
 
 commands:
-#  bankware:
-#    description: Bank commands like reload, give, take, balance, reload
-#    permission: bankware.givetake
+  mws:
+    description: mws commands like reload, etc.
+    permission: bankware.canReload
 
 
 permissions:
-  bankware.canReload:
+  mws.canReload:
     description: Can reload the config
     default: op
