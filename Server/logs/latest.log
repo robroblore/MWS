@@ -1,6 +1,0 @@
-[20:14:42] [ServerMain/INFO]: [bootstrap] Running Java 22 (Java HotSpot(TM) 64-Bit Server VM 22.0.2+9-70; Oracle Corporation null) on Windows 11 10.0 (amd64)
-[20:14:42] [ServerMain/INFO]: [bootstrap] Loading Paper 1.21.8-25-main@846c64f (2025-08-04T13:12:55Z) for Minecraft 1.21.8
-[20:14:43] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
-[20:14:43] [ServerMain/INFO]: [PluginInitializerManager] Initialized 1 plugin
-[20:14:43] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (1):
- - MWS (1.0)

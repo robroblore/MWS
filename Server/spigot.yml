@@ -161,6 +161,8 @@ world-settings:
     view-distance: default
     simulation-distance: default
     verbose: false
+  worldeditregentempworld:
+    verbose: false
 players:
   disable-saving: false
 config-version: 12

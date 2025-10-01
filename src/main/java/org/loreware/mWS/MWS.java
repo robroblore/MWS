@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
 
     FileConfiguration config;
-
+    Location currLoc;
     @Override
     public void onEnable() {
         System.out.println("MWS plugin enabled");
@@ -68,9 +68,7 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
             debug("Request method: " + method);
             debug("Headers:");
             headers.forEach((k, v) -> debug(k + ": " + v));
-            debug("Request body: " + requestBodyString);
-
-            Bukkit.broadcast(Component.text("Received: " + requestBodyString));
+//            debug("Request body: " + requestBodyString);
 
             byte[] response = null;
 
@@ -80,20 +78,28 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
                         case "binary" -> response = readBinData();
                         case "hexa" -> response = readHexaData();
                     }
-                    debug("Response: " + new String(response));
+//                    debug("Response: " + new String(response));
                 }
 
                 case "POST" -> {
                     response = "Data received in the MWS plugin!".getBytes();
-                    debug("Received POST request");
-                    switch (headers.get("content-type").getFirst()) {
-                        case "text/plain" -> {
-                            debug("Handling plain text data");
-                            switch (headers.get("x-storagemethod").getFirst()) {
-                                case "binary" -> saveBinData(requestBody);
-                                case "hexa" -> saveHexaData(requestBody);
-                            }
-                        }
+//                    debug("Received POST request");
+                    String contentType = headers.get("content-type").getFirst();
+
+                    if(contentType.equals("text/plain")) {
+//                        debug("Handling plain text data");
+
+                    }
+                    else if(contentType.startsWith("image/")) {
+//                        debug("Handling image data");
+                        String fileName = headers.get("x-filename").getFirst();
+                        String fileSize = headers.get("x-filesize").getFirst();
+                        debugb(fileSize);
+                    }
+
+                    switch (headers.get("x-storagemethod").getFirst()) {
+                        case "binary" -> saveBinData(requestBody);
+                        case "hexa" -> saveHexaData(requestBody);
                     }
                 }
 
@@ -105,7 +111,7 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
 
             t.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             t.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-            t.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, X-StorageMethod");
+            t.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, X-StorageMethod, X-FileSize, X-FileName");
 
             assert response != null;
             t.sendResponseHeaders(200, response.length);
@@ -142,27 +148,31 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
 
 
     public static void saveBinData(byte[] data){
-        debugb("Saving binary data: " + new String(data));
+//        debugb("Saving binary data: " + new String(data));
         int totalBits = data.length * 8;
         BitSet bitset = BitSet.valueOf(data);
+        Location currLocation = new Location(Bukkit.getWorld("world"), 0, -64, 0);
 
         Bukkit.getServer().getScheduler().runTask(getPlugin(MWS.class), () -> {
             int i;
             for(i = 0; i < totalBits; i++){
                 int bit = bitset.get(i) ? 1 : 0;
 
-                new Location(Bukkit.getWorld("world"), i, 0, 0).getBlock().setType(binaryBlockList.get(bit));
+                currLocation.getBlock().setType(binaryBlockList.get(bit));
+                getNextLocation(currLocation);
             }
-            new Location(Bukkit.getWorld("world"), i, 0, 0).getBlock().setType(Material.BEDROCK);
+            currLocation.getBlock().setType(Material.BEDROCK);
         });
     }
 
     public static byte[] readBinData(){
         StringBuilder bitArray = new StringBuilder();
+        Location currLocation = new Location(Bukkit.getWorld("world"), 0, -64, 0);
 
         int i = 0;
         while(true){
-            Material currBlock = new Location(Bukkit.getWorld("world"), i, 0, 0).getBlock().getType();
+            Material currBlock = currLocation.getBlock().getType();
+            getNextLocation(currLocation);
 
             if(currBlock == Material.BEDROCK) break;
 
@@ -188,14 +198,14 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
 
     public static void saveHexaData(byte[] data){
         Bukkit.getServer().getScheduler().runTask(getPlugin(MWS.class), () -> {
-            Location currLoc = new Location(Bukkit.getWorld("world"), 0, 0, 0);
+            Location currLoc = new Location(Bukkit.getWorld("world"), 0, -64, 0);
             for(byte b : data){
                 int msb = (b >> 4) & 0x0F;
                 int lsb = b & 0x0F;
                 currLoc.getBlock().setType(hexaBlockList.get(msb));
-                currLoc.add(1, 0, 0);
+                getNextLocation(currLoc);
                 currLoc.getBlock().setType(hexaBlockList.get(lsb));
-                currLoc.add(1, 0, 0);
+                getNextLocation(currLoc);
             }
             currLoc.getBlock().setType(Material.BEDROCK);
         });
@@ -204,12 +214,12 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
     public static byte[] readHexaData(){
         ByteArrayOutputStream data = new ByteArrayOutputStream();
 
-        Location currLoc = new Location(Bukkit.getWorld("world"), 0, 0, 0);
+        Location currLoc = new Location(Bukkit.getWorld("world"), 0, -64, 0);
         while(true){
             Material msbBlock = currLoc.getBlock().getType();
-            currLoc.add(1, 0, 0);
+            getNextLocation(currLoc);
             Material lsbBlock = currLoc.getBlock().getType();
-            currLoc.add(1, 0, 0);
+            getNextLocation(currLoc);
 
             if(msbBlock == Material.BEDROCK || lsbBlock == Material.BEDROCK) break;
 
@@ -221,6 +231,33 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
         }
 
         return data.toByteArray();
+    }
+
+    public static void getNextLocation(Location loc){
+        if (((int)loc.getX() + 1) % 16 == 0){
+            if (((int)loc.getZ() + 1) % 16 == 0){
+                if(((int)loc.getY() + 1) == 320) loc.add(1, -383, -15);
+                else loc.add(-15, 1, -15);
+            } else{
+                loc.add(-15, 0, 1);
+            }
+        } else {
+            loc.add(1, 0, 0);
+        }
+    }
+
+    public void test(int count){
+        debug("Test");
+        if (currLoc == null) currLoc = new Location(Bukkit.getWorld("world"), 0, -64, 0);
+        if(count == 0){
+            currLoc = new Location(Bukkit.getWorld("world"), 0, -64, 0);
+            count = 10000000;
+        }
+        for (int i = 0; i < count; i++) {
+            currLoc.getBlock().setType(Material.AIR);
+            getNextLocation(currLoc);
+        }
+
     }
 
 
@@ -236,6 +273,10 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
 
                     player.sendMessage(getConf("messages.prefix") + "§2Config reloaded.");
                     return true;
+                } else if(args.length > 1 && (args[0].equalsIgnoreCase("test") || args[0].equalsIgnoreCase("t"))) {
+                    if(args.length == 2) test(Integer.parseInt(args[1]));
+                    else test(1);
+
                 }
             }
         }
@@ -248,6 +289,7 @@ public final class MWS extends JavaPlugin implements Listener, CommandExecutor {
                 List<String> list = new ArrayList<>();
 
                 list.add("reload");
+                list.add("test");
                 return list;
             }
         }
